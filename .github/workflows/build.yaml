@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          Invoke-WebRequest -Uri "$env:PIN_URL" -OutFile "$env:PIN_ARCHIVE"
+          curl.exe -L --fail --retry 3 --output "$env:PIN_ARCHIVE" "$env:PIN_URL"
 
       - name: Extract Intel Pin to C:\pin
         shell: pwsh
@@ -45,7 +45,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           Remove-Item -Recurse -Force "$env:PIN_ROOT" -ErrorAction SilentlyContinue
           Expand-Archive -Path "$env:PIN_ARCHIVE" -DestinationPath "$env:PIN_EXTRACT" -Force
-          $pinFolder = Get-ChildItem -Path "$env:PIN_EXTRACT" -Directory | Select-Object -First 1
+          $pinFolder = Get-ChildItem -Path "$env:PIN_EXTRACT" -Directory | Where-Object { $_.Name -like 'pin-*' } | Select-Object -First 1
           if (-not $pinFolder) { throw "Pin archive did not contain an extracted directory" }
           Move-Item -Path $pinFolder.FullName -Destination "$env:PIN_ROOT"
 
