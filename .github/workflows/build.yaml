@@ -13,8 +13,8 @@ jobs:
       CONFIGURATION: Release
       PLATFORM: x64
       PIN_URL: https://software.intel.com/sites/landingpage/pintool/downloads/pin-3.18-98332-gaebd7b1e6-msvc-windows.zip
-      PIN_ARCHIVE: ${{ runner.temp }}\pin-3.18-98332-gaebd7b1e6-msvc-windows.zip
-      PIN_EXTRACT: ${{ runner.temp }}\pin-src
+      PIN_ARCHIVE: C:\Windows\Temp\pin-3.18-98332-gaebd7b1e6-msvc-windows.zip
+      PIN_EXTRACT: C:\Windows\Temp\pin-src
       PIN_ROOT: C:\pin
       PINTOOL_DIR: C:\pintool
 
