@@ -1,0 +1,66 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2019
+    env:
+      SOLUTION: UnSafengine64.sln
+      CONFIGURATION: Release
+      PLATFORM: x64
+      PIN_URL: https://software.intel.com/sites/landingpage/pintool/downloads/pin-3.18-98332-gaebd7b1e6-msvc-windows.zip
+      PIN_ARCHIVE: ${{ runner.temp }}\pin-3.18-98332-gaebd7b1e6-msvc-windows.zip
+      PIN_EXTRACT: ${{ runner.temp }}\pin-src
+      PIN_ROOT: C:\pin
+      PINTOOL_DIR: C:\pintool
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Prepare build directories
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path "$env:PINTOOL_DIR" | Out-Null
+          Remove-Item -Recurse -Force "$env:PIN_EXTRACT" -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path "$env:PIN_EXTRACT" | Out-Null
+
+      - name: Download Intel Pin 3.18
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Invoke-WebRequest -Uri "$env:PIN_URL" -OutFile "$env:PIN_ARCHIVE"
+
+      - name: Extract Intel Pin to C:\pin
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Remove-Item -Recurse -Force "$env:PIN_ROOT" -ErrorAction SilentlyContinue
+          Expand-Archive -Path "$env:PIN_ARCHIVE" -DestinationPath "$env:PIN_EXTRACT" -Force
+          $pinFolder = Get-ChildItem -Path "$env:PIN_EXTRACT" -Directory | Select-Object -First 1
+          if (-not $pinFolder) { throw "Pin archive did not contain an extracted directory" }
+          Move-Item -Path $pinFolder.FullName -Destination "$env:PIN_ROOT"
+
+      - name: Build solution
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          msbuild "$env:SOLUTION" /m /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnSafengine64-${{ env.CONFIGURATION }}-${{ env.PLATFORM }}
+          path: |
+            C:\pintool\UnSafengine64.dll
+            C:\pintool\UnSafengine64.exe
+            C:\pintool\UnSafengine64.cfg
+          if-no-files-found: error
